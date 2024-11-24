@@ -38,6 +38,8 @@ ARCHITECTURE RTL OF Testbench IS
     SIGNAL w_Video_Enable : STD_LOGIC := '0';
     SIGNAL w_H_Sync : STD_LOGIC := '0';
     SIGNAL w_V_Sync : STD_LOGIC := '0';
+    SIGNAL w_H_Sync_Aligned : STD_LOGIC := '0';
+    SIGNAL w_V_Sync_Aligned : STD_LOGIC := '0';
     SIGNAL w_H_Pos : INTEGER RANGE 0 TO c_H_MAX := 0;
     SIGNAL w_V_Pos : INTEGER RANGE 0 TO c_V_MAX := 0;
     
@@ -74,25 +76,23 @@ BEGIN
     PORT MAP (
         i_Clk           => w_Clk_250_MHz,
         o_Pixel_Clk     => w_Pixel_Clk,
-        o_Video_Enable  => w_Video_Enable,
         o_H_Sync        => w_H_Sync,
-        o_V_Sync        => w_V_Sync,
-        o_H_Pos         => w_H_Pos,
-        o_V_Pos         => w_V_Pos
+        o_V_Sync        => w_V_Sync
     );
    
     e_PONG_GAME: ENTITY WORK.PongGame
     PORT MAP (
         i_Clk           => w_Pixel_Clk,
-        i_Video_Enable  => w_Video_Enable,
+        i_H_Sync        => w_H_Sync,
+        i_V_Sync        => w_V_Sync,
         i_Pressed_Up    => w_Pressed_Up,
         i_Pressed_Down  => w_Pressed_Down,
         i_Pressed_Left  => w_Pressed_Left,
         i_Pressed_Right => w_Pressed_Right,
         i_Pressed_A     => w_Pressed_A,
         i_Pressed_B     => w_Pressed_B,
-        i_H_Pos         => w_H_Pos,
-        i_V_Pos         => w_V_Pos,
+        o_H_Sync        => w_H_Sync_Aligned,
+        o_V_Sync        => w_V_Sync_Aligned,
         o_Channel_R     => w_Channel_R,
         o_Channel_G     => w_Channel_G,
         o_Channel_B     => w_Channel_B
@@ -105,9 +105,8 @@ BEGIN
         i_Channel_B     => w_Channel_B,
         i_Clk           => w_Clk_250_MHz,
         i_Pixel_Clk     => w_Pixel_Clk,
-        i_H_Sync        => w_H_Sync,
-        i_V_Sync        => w_V_Sync,
-        i_Video_Enable  => w_Video_Enable,
+        i_H_Sync        => w_H_Sync_Aligned,
+        i_V_Sync        => w_V_Sync_Aligned,
         o_Hdmi_Data_N   => o_Hdmi_Data_N,
         o_Hdmi_Data_P   => o_Hdmi_Data_P,
         o_Hdmi_Clk_N    => o_Hdmi_Clk_N,

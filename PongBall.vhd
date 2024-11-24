@@ -62,7 +62,7 @@ BEGIN
           -- If ball is moving to the right, keep it moving right, but check
           -- that it's not at the wall (in which case it bounces back)
           IF r_Ball_X_Prev < r_Ball_X THEN
-            IF r_Ball_X = c_Game_Width-2 THEN
+            IF r_Ball_X = c_Game_Width - 2 THEN
               r_Ball_X <= r_Ball_X - 1;
             ELSE
               r_Ball_X <= r_Ball_X + 1;
@@ -89,7 +89,7 @@ BEGIN
           -- If ball is moving to the up, keep it moving up, but check
           -- that it's not at the wall (in which case it bounces back)
           IF r_Ball_Y_Prev < r_Ball_Y THEN
-            IF r_Ball_Y = c_Game_Height-1 THEN
+            IF r_Ball_Y = c_Game_Height - 2 THEN
               r_Ball_Y <= r_Ball_Y - 1;
             ELSE
               r_Ball_Y <= r_Ball_Y + 1;

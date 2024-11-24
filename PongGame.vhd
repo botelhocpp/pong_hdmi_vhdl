@@ -9,15 +9,16 @@ USE WORK.HdmiPkg.ALL;
 ENTITY PongGame IS
 PORT (
     i_Clk : IN STD_LOGIC;
-    i_Video_Enable : IN STD_LOGIC;
+    i_H_Sync : IN STD_LOGIC;
+    i_V_Sync : IN STD_LOGIC;
     i_Pressed_Up : IN STD_LOGIC;
     i_Pressed_Down : IN STD_LOGIC;
     i_Pressed_Left : IN STD_LOGIC;
     i_Pressed_Right : IN STD_LOGIC;
     i_Pressed_A : IN STD_LOGIC;
     i_Pressed_B : IN STD_LOGIC;
-    i_H_Pos : IN INTEGER RANGE 0 TO c_H_MAX;
-    i_V_Pos : IN INTEGER RANGE 0 TO c_V_MAX;
+    o_H_Sync : OUT STD_LOGIC;
+    o_V_Sync : OUT STD_LOGIC;
     o_Channel_R : OUT t_Byte;
     o_Channel_G : OUT t_Byte;
     o_Channel_B : OUT t_Byte
@@ -34,13 +35,6 @@ ARCHITECTURE RTL OF PongGame IS
       s_CLEANUP
   );
   SIGNAL r_Current_State : t_GameState := s_IDLE;
-   
-  SIGNAL w_HSync : STD_LOGIC;
-  SIGNAL w_VSync : STD_LOGIC;
-   
-  -- Make these unsigned counters (always positive)
-  SIGNAL w_Col_Count : STD_LOGIC_VECTOR(9 DOWNTO 0);
-  SIGNAL w_Row_Count : STD_LOGIC_VECTOR(9 DOWNTO 0);
  
   -- Divided version of the Row/Col Counters.
   -- Allows us to make the board 40x30
@@ -61,10 +55,13 @@ ARCHITECTURE RTL OF PongGame IS
   SIGNAL w_Draw_Score_P2  : STD_LOGIC;
   SIGNAL w_Ball_X         : STD_LOGIC_VECTOR(5 DOWNTO 0);
   SIGNAL w_Ball_Y         : STD_LOGIC_VECTOR(5 DOWNTO 0);
-  SIGNAL w_Draw_Any       : STD_LOGIC;
    
   SIGNAL w_Game_Active : STD_LOGIC;
   SIGNAL w_Game_Paused : STD_LOGIC;
+  SIGNAL w_Video_Enable : STD_LOGIC;
+  
+  SIGNAL r_H_Sync : STD_LOGIC;
+  SIGNAL r_V_Sync : STD_LOGIC;
  
   SIGNAL w_Paddle_Y_P1_Top : UNSIGNED(5 DOWNTO 0);
   SIGNAL w_Paddle_Y_P1_Bot : UNSIGNED(5 DOWNTO 0);
@@ -76,13 +73,38 @@ ARCHITECTURE RTL OF PongGame IS
    
   SIGNAL w_H_Pos : INTEGER RANGE 0 TO c_H_MAX := 0;
   SIGNAL w_V_Pos : INTEGER RANGE 0 TO c_V_MAX := 0;
+
+  SIGNAL r_H_Pos : INTEGER RANGE 0 TO c_H_MAX := 0;
+  SIGNAL r_V_Pos : INTEGER RANGE 0 TO c_V_MAX := 0;
   
   SIGNAL w_P1_Paddle_Up, w_P1_Paddle_Dn, r_P2_Paddle_Up, r_P2_Paddle_Dn, r_Pressed_B : STD_LOGIC := '0';
 BEGIN
-    w_H_Pos <= (i_H_Pos - c_H_BACK_PORCH - c_H_PULSE_WIDTH)/16 WHEN (i_Video_Enable = '1') ELSE 63;
-    w_V_Pos <= (i_V_Pos - c_V_BACK_PORCH - c_V_PULSE_WIDTH)/16 WHEN (i_Video_Enable = '1') ELSE 63;
     w_P1_Paddle_Up <= i_Pressed_Up AND w_Game_Active;
     w_P1_Paddle_Dn <= i_Pressed_Down AND w_Game_Active;
+
+    e_SYNC_TO_COUNT: ENTITY work.HdmiCountSync
+    PORT MAP (
+      i_Clk           => i_Clk,
+      i_H_Sync        => i_H_Sync,
+      i_V_Sync        => i_V_Sync,
+      o_Video_Enable  => w_Video_Enable,
+      o_H_Sync        => r_H_Sync,
+      o_V_Sync        => r_V_Sync,
+      o_H_Pos         => r_H_Pos,
+      o_V_Pos         => r_V_Pos
+    );
+    w_H_Pos <= r_H_Pos/16;
+    w_V_Pos <= r_V_Pos/16;
+  
+    -- Register syncs to align with output data.
+    p_SYNC_PULSES:
+    PROCESS (i_Clk) IS
+    BEGIN
+      IF (RISING_EDGE(i_Clk)) THEN
+        o_V_Sync <= r_V_Sync;
+        o_H_Sync <= r_H_Sync;
+      END IF;
+    END PROCESS p_SYNC_PULSES; 
  
     e_SAMPLE_B_BUTTON: ENTITY WORK.SamplingRegister
     GENERIC MAP (g_NUM_CYCLES => 25000000)
@@ -94,7 +116,7 @@ BEGIN
  
     e_PLAYER_1_PADDLE: ENTITY WORK.PongPaddle
     GENERIC MAP (
-        g_Player_Paddle_X => 1
+        g_Player_Paddle_X => c_P1_PADDLE_COL + 1 
     )
     PORT MAP (
         i_Clk           => i_Clk,
@@ -107,7 +129,7 @@ BEGIN
     );
     e_PLAYER_2_PADDLE: ENTITY WORK.PongPaddle
     GENERIC MAP (
-        g_Player_Paddle_X => 38
+        g_Player_Paddle_X => c_P2_PADDLE_COL - 1
     )
     PORT MAP (
         i_Clk           => i_Clk,
@@ -132,7 +154,7 @@ BEGIN
     GENERIC MAP ( g_SCORE_X => 8 )
     PORT MAP (
         i_Clk => i_Clk,
-        i_Video_Enable => i_Video_Enable,
+        i_Video_Enable => w_Video_Enable,
         i_Col_Count     => w_H_Pos,
         i_Row_Count     => w_V_Pos,
         i_Score         => r_P1_Score,
@@ -142,7 +164,7 @@ BEGIN
     GENERIC MAP ( g_SCORE_X => 29 )
     PORT MAP (
         i_Clk => i_Clk,
-        i_Video_Enable => i_Video_Enable,
+        i_Video_Enable => w_Video_Enable,
         i_Col_Count     => w_H_Pos,
         i_Row_Count     => w_V_Pos,
         i_Score         => r_P2_Score,
