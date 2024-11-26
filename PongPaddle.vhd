@@ -10,12 +10,13 @@ ENTITY PongPaddle IS
 GENERIC ( g_Player_Paddle_X : INTEGER );
 PORT (
     i_Clk : IN STD_LOGIC;
+    i_Paddle_Speed : IN INTEGER RANGE 0 TO c_PADDLE_REFRESH_RATE;
     i_Col_Count : IN INTEGER RANGE 0 TO c_H_MAX;
     i_Row_Count : IN INTEGER RANGE 0 TO c_V_MAX;
     i_Paddle_Up : IN STD_LOGIC;
     i_Paddle_Dn : IN STD_LOGIC;
     o_Draw_Paddle : OUT STD_LOGIC;
-    o_Paddle_Y    : OUT  INTEGER RANGE 0 TO c_V_MAX
+    o_Paddle_Y    : OUT INTEGER RANGE 0 TO c_V_MAX
 );
 END ENTITY;
  
@@ -30,48 +31,43 @@ ARCHITECTURE RTL OF PongPaddle IS
   SIGNAL r_Paddle_Up, r_Paddle_Dn : STD_LOGIC := '0';
 BEGIN
     e_SAMPLE_PADDLE_UP: ENTITY WORK.SamplingRegister
-    GENERIC MAP ( g_NUM_CYCLES => c_PADDLE_SPEED )
     PORT MAP (
         i_Signal  => i_Paddle_Up,
         i_Clk => i_Clk,
+        i_Number_Cycles => i_Paddle_Speed,
         o_Output => r_Paddle_Up
     );
     
     e_SAMPLE_PADDLE_DN: ENTITY WORK.SamplingRegister
-    GENERIC MAP ( g_NUM_CYCLES => c_PADDLE_SPEED )
     PORT MAP (
         i_Signal  => i_Paddle_Dn,
         i_Clk => i_Clk,
+        i_Number_Cycles => i_Paddle_Speed,
         o_Output => r_Paddle_Dn
     );
     
-  -- Only allow paddles to move if only one button is pushed.
   w_Paddle_Count_En <= r_Paddle_Up XOR r_Paddle_Dn;
  
-  -- Controls how the paddles are moved.  Sets r_Paddle_Y.
-  -- Can change the movement speed by changing the constant in Package file.
-  p_Move_Paddles : PROCESS (i_Clk) IS
+  p_MOVE_PADDLE: 
+  PROCESS (i_Clk) IS
   BEGIN
     IF RISING_EDGE(i_Clk) THEN
- 
-      -- Update the Paddle Location Slowly, only allowed when the Paddle Count
-      -- reaches its limit
       IF (i_Paddle_Up = '1' AND w_Paddle_Count_En = '1') THEN
- 
+  
         -- If Paddle is already at the top, do not update it
         IF (r_Paddle_Y /= 0) THEN
           r_Paddle_Y <= r_Paddle_Y - 1;
         END IF;
- 
+  
       ELSIF (i_Paddle_Dn = '1' AND w_Paddle_Count_En = '1') THEN
- 
+  
         -- If Paddle is already at the bottom, do not update it
         IF (r_Paddle_Y /= c_GAME_HEIGHT - c_PADDLE_HEIGHT - 1) THEN
           r_Paddle_Y <= r_Paddle_Y + 1;
         END IF; 
       END IF;
     END IF;
-  END PROCESS p_Move_Paddles;
+  END PROCESS p_MOVE_PADDLE;
    
   p_DRAW_PADDLE:
   PROCESS (i_Clk) IS

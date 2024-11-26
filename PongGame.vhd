@@ -39,12 +39,12 @@ ARCHITECTURE RTL OF PongGame IS
   );
   SIGNAL r_Current_State : t_GameState := s_IDLE;
 
-  TYPE t_ColorScheme IS (
+  TYPE t_Level IS (
     s_COLORFUL,
     s_GRAYSCALE,
     s_BLACK_WHITE
   );
-  SIGNAL r_Current_Color : t_ColorScheme := s_COLORFUL;
+  SIGNAL r_Current_Level : t_Level := s_COLORFUL;
  
   SIGNAL w_Draw_Paddle_P1 : STD_LOGIC := '0';
   SIGNAL w_Draw_Paddle_P2 : STD_LOGIC := '0';
@@ -74,15 +74,24 @@ ARCHITECTURE RTL OF PongGame IS
   SIGNAL r_Video_Enable_Aligned : STD_LOGIC := '0';
   SIGNAL r_H_Sync_Aligned : STD_LOGIC := '1';
   SIGNAL r_V_Sync_Aligned : STD_LOGIC := '1';
-BEGIN
+
+  SIGNAL w_Modifier : INTEGER RANGE 0 TO c_MAX_MODIFIER := 0;
+  SIGNAL w_P2_Speed : INTEGER RANGE 0 TO c_PADDLE_REFRESH_RATE := 0;
+BEGIN 
+  WITH r_Current_Level SELECT 
+    w_Modifier <= c_COLORFUL_MODIFIER * r_P1_Score     WHEN s_COLORFUL,
+                  c_GRAYSCALE_MODIFIER * r_P1_Score    WHEN s_GRAYSCALE,
+                  c_BLACK_WHITE_MODIFIER * r_P1_Score  WHEN s_BLACK_WHITE;
+
     w_H_Pos <= i_H_Pos/c_GAME_SCALE;
     w_V_Pos <= i_V_Pos/c_GAME_SCALE;
+    w_P2_Speed <= c_PADDLE_REFRESH_RATE - w_Modifier;
  
     e_SAMPLE_B_BUTTON: ENTITY WORK.SamplingRegister
-    GENERIC MAP (g_NUM_CYCLES => c_PIXEL_CLK_FREQ/2)
     PORT MAP (
         i_Signal  => i_Pressed_B,
         i_Clk     => i_Clk,
+        i_Number_Cycles => c_PIXEL_CLK_FREQ/2,
         o_Output  => r_Pressed_B
     );
  
@@ -90,6 +99,7 @@ BEGIN
     GENERIC MAP ( g_Player_Paddle_X => c_P1_PADDLE_COL )
     PORT MAP (
         i_Clk           => i_Clk,
+        i_Paddle_Speed  => c_PADDLE_REFRESH_RATE,
         i_Col_Count     => w_H_Pos,
         i_Row_Count     => w_V_Pos,
         i_Paddle_Up     => i_Pressed_Up,
@@ -101,6 +111,7 @@ BEGIN
     GENERIC MAP ( g_Player_Paddle_X => c_P2_PADDLE_COL )
     PORT MAP (
         i_Clk           => i_Clk,
+        i_Paddle_Speed  => w_P2_Speed,
         i_Col_Count     => w_H_Pos,
         i_Row_Count     => w_V_Pos,
         i_Paddle_Up     => r_P2_Paddle_Up,
@@ -114,6 +125,7 @@ BEGIN
         i_Game_Active   => w_Game_Active,
         i_Col_Count     => w_H_Pos,
         i_Row_Count     => w_V_Pos,
+        i_Modifier      => w_Modifier,
         o_Draw_Ball     => w_Draw_Ball,
         o_Ball_X        => w_Ball_X,
         o_Ball_Y        => w_Ball_Y
@@ -143,7 +155,7 @@ BEGIN
   w_Paddle_Y_P1_Bot <= w_Paddle_Y_P1 + c_PADDLE_HEIGHT;
   w_Paddle_Y_P2_Top <= w_Paddle_Y_P2;
   w_Paddle_Y_P2_Bot <= w_Paddle_Y_P2 + c_PADDLE_HEIGHT;
- 
+
   p_GAME_FSM:
   PROCESS (i_Clk) IS
   BEGIN
@@ -152,6 +164,17 @@ BEGIN
         WHEN s_IDLE =>
           IF i_Pressed_A = '1' THEN
             r_Current_State <= s_RUNNING;
+          END IF;
+
+          IF r_Pressed_B = '1' THEN
+            CASE r_Current_Level IS
+              WHEN s_COLORFUL =>
+                r_Current_Level <= s_GRAYSCALE;
+              WHEN s_GRAYSCALE =>
+                r_Current_Level <= s_BLACK_WHITE;
+              WHEN s_BLACK_WHITE =>
+                r_Current_Level <= s_COLORFUL;
+            END CASE;
           END IF;
          
         -- Stay in this state until either player misses the ball 
@@ -187,17 +210,6 @@ BEGIN
           
           r_Current_State <= s_IDLE;
         END CASE;
-
-        IF r_Pressed_B = '1' THEN
-        CASE r_Current_Color IS
-          WHEN s_COLORFUL =>
-            r_Current_Color <= s_GRAYSCALE;
-          WHEN s_GRAYSCALE =>
-            r_Current_Color <= s_BLACK_WHITE;
-          WHEN s_BLACK_WHITE =>
-            r_Current_Color <= s_COLORFUL;
-        END CASE;
-      END IF;
     END IF;
   END PROCESS p_GAME_FSM;
  
@@ -210,7 +222,7 @@ BEGIN
     IF(RISING_EDGE(i_Clk)) THEN
         -- Draw Players (Cyan)
         IF(w_Draw_Paddle_P1 = '1' OR w_Draw_Paddle_P2 = '1') THEN
-          CASE r_Current_Color IS
+          CASE r_Current_Level IS
             WHEN s_COLORFUL =>
               o_Channel_R <= (OTHERS => '0');
               o_Channel_G <= (OTHERS => '1');
@@ -227,7 +239,7 @@ BEGIN
           
         -- Draw Ball (Green)
         ELSIF(w_Draw_Ball = '1') THEN 
-          CASE r_Current_Color IS
+          CASE r_Current_Level IS
             WHEN s_COLORFUL =>
               o_Channel_R <= (OTHERS => '0');
               o_Channel_G <= (OTHERS => '1');
@@ -244,7 +256,7 @@ BEGIN
 
         -- Draw Score (Yellow)
         ELSIF(w_Draw_Score_P1 = '1' OR w_Draw_Score_P2 = '1') THEN 
-          CASE r_Current_Color IS
+          CASE r_Current_Level IS
             WHEN s_COLORFUL =>
               o_Channel_R <= (OTHERS => '1');
               o_Channel_G <= (OTHERS => '1');
@@ -271,7 +283,7 @@ BEGIN
         
         -- Draw Background (Blue)
         ELSE         
-          CASE r_Current_Color IS
+          CASE r_Current_Level IS
             WHEN s_COLORFUL =>
               o_Channel_R <= (OTHERS => '0');
               o_Channel_G <= (OTHERS => '0');
@@ -291,12 +303,12 @@ BEGIN
   
   p_UPDATE_P2_PADDLE: 
   PROCESS(i_Clk)
-    VARIABLE v_Counter : INTEGER RANGE 0 TO c_REFRESH_RATE := 0;
+    VARIABLE v_Counter : INTEGER RANGE 0 TO c_PADDLE_REFRESH_RATE := 0;
     VARIABLE v_Move_Down : STD_LOGIC := '1';
   BEGIN
     IF(RISING_EDGE(i_Clk)) THEN
         IF(w_Game_Active = '1') THEN
-            IF(v_Counter = c_REFRESH_RATE) THEN
+            IF(v_Counter = w_P2_Speed) THEN
                 v_Counter := 0;
                     
                 IF(v_Move_Down = '1' AND w_Paddle_Y_P2 = c_GAME_HEIGHT - c_PADDLE_HEIGHT - 1) THEN
@@ -321,6 +333,7 @@ BEGIN
     END IF;
   END PROCESS;
 
+  -- Sync 
   p_SYNC_PULSES:
   PROCESS(i_Clk)
   BEGIN
