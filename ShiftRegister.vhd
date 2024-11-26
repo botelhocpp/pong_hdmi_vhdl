@@ -1,16 +1,16 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 
-ENTITY shift_register IS
+ENTITY ShiftRegister IS
 GENERIC ( g_N : INTEGER := 10 );
 PORT (
     i_Data_In : IN STD_LOGIC_VECTOR(g_N - 1 DOWNTO 0);
     i_Clk : IN STD_LOGIC;
     i_Data_Out : OUT STD_LOGIC
 );
-END shift_register;
+END ENTITY;
 
-ARCHITECTURE behav OF shift_register IS
+ARCHITECTURE RTL OF ShiftRegister IS
     SIGNAL r_Data_Bits : STD_LOGIC_VECTOR(g_N - 1 DOWNTO 0);
 BEGIN
     PROCESS (i_Clk)
@@ -28,4 +28,4 @@ BEGIN
             i_Data_Out <= r_Data_Bits(v_Iterator);
         END IF;
     END PROCESS;
-END behav;
+END ARCHITECTURE;

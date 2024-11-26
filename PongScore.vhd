@@ -19,8 +19,7 @@ PORT (
 END ENTITY;
 
 ARCHITECTURE RTL OF PongScore IS
-    -- Wires
-    SIGNAL w_Char_Select : INTEGER RANGE 0 TO c_SCORE_LIMIT := 0; 
+    -- Wires 
     SIGNAL w_Row_Select : INTEGER RANGE 0 TO c_SCORE_HEIGHT := 0;
     SIGNAL w_Char_Row : STD_LOGIC_VECTOR(c_SCORE_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');
     

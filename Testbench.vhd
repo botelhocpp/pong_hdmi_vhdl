@@ -26,7 +26,7 @@ ENTITY Testbench IS
 END ENTITY;
  
 ARCHITECTURE RTL OF Testbench IS
-    SIGNAL w_Clk_250_MHz : STD_LOGIC;
+    SIGNAL w_Clk_400_MHz : STD_LOGIC;
     
     SIGNAL w_Pressed_Up : STD_LOGIC := '0';
     SIGNAL w_Pressed_Down : STD_LOGIC := '0';
@@ -40,6 +40,9 @@ ARCHITECTURE RTL OF Testbench IS
     SIGNAL w_V_Sync : STD_LOGIC := '0';
     SIGNAL w_H_Pos : INTEGER RANGE 0 TO c_H_MAX := 0;
     SIGNAL w_V_Pos : INTEGER RANGE 0 TO c_V_MAX := 0;
+    SIGNAL w_Video_Enable_Aligned : STD_LOGIC := '0';
+    SIGNAL w_H_Sync_Aligned : STD_LOGIC := '0';
+    SIGNAL w_V_Sync_Aligned : STD_LOGIC := '0';
     
     SIGNAL w_Channel_R : t_Byte := (OTHERS => '0');
     SIGNAL w_Channel_G : t_Byte := (OTHERS => '0');
@@ -49,7 +52,7 @@ BEGIN
     PORT MAP (
         i_Clk => i_Clk,
         reset => '0',
-        o_Clk => w_Clk_250_MHz,
+        o_Clk => w_Clk_400_MHz,
         o_Locked => OPEN
     );
 
@@ -72,7 +75,7 @@ BEGIN
     
     e_HDMI_SYNC: ENTITY WORK.HdmiSync
     PORT MAP (
-        i_Clk           => w_Clk_250_MHz,
+        i_Clk           => w_Clk_400_MHz,
         o_Pixel_Clk     => w_Pixel_Clk,
         o_Video_Enable  => w_Video_Enable,
         o_H_Sync        => w_H_Sync,
@@ -84,6 +87,8 @@ BEGIN
     e_PONG_GAME: ENTITY WORK.PongGame
     PORT MAP (
         i_Clk           => w_Pixel_Clk,
+        i_H_Sync        => w_H_Sync,
+        i_V_Sync        => w_V_Sync,
         i_Video_Enable  => w_Video_Enable,
         i_Pressed_Up    => w_Pressed_Up,
         i_Pressed_Down  => w_Pressed_Down,
@@ -93,6 +98,9 @@ BEGIN
         i_Pressed_B     => w_Pressed_B,
         i_H_Pos         => w_H_Pos,
         i_V_Pos         => w_V_Pos,
+        o_Video_Enable  => w_Video_Enable_Aligned,
+        o_H_Sync        => w_H_Sync_Aligned,
+        o_V_Sync        => w_V_Sync_Aligned,
         o_Channel_R     => w_Channel_R,
         o_Channel_G     => w_Channel_G,
         o_Channel_B     => w_Channel_B
@@ -103,11 +111,11 @@ BEGIN
         i_Channel_R     => w_Channel_R,
         i_Channel_G     => w_Channel_G,
         i_Channel_B     => w_Channel_B,
-        i_Clk           => w_Clk_250_MHz,
+        i_Clk           => w_Clk_400_MHz,
         i_Pixel_Clk     => w_Pixel_Clk,
-        i_H_Sync        => w_H_Sync,
-        i_V_Sync        => w_V_Sync,
-        i_Video_Enable  => w_Video_Enable,
+        i_Video_Enable  => w_Video_Enable_Aligned,
+        i_H_Sync        => w_H_Sync_Aligned,
+        i_V_Sync        => w_V_Sync_Aligned,
         o_Hdmi_Data_N   => o_Hdmi_Data_N,
         o_Hdmi_Data_P   => o_Hdmi_Data_P,
         o_Hdmi_Clk_N    => o_Hdmi_Clk_N,

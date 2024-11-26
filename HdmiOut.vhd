@@ -15,9 +15,9 @@ PORT (
     i_Channel_B : IN t_Byte;
     i_Clk : IN STD_LOGIC;
     i_Pixel_Clk : IN STD_LOGIC;
+    i_Video_Enable : IN STD_LOGIC;
     i_H_Sync : IN STD_LOGIC;
     i_V_Sync : IN STD_LOGIC;
-    i_Video_Enable : IN STD_LOGIC;
     o_Hdmi_Data_N : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
     o_Hdmi_Data_P : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
     o_Hdmi_Clk_N : OUT STD_LOGIC;
@@ -26,8 +26,13 @@ PORT (
 END ENTITY;
 
 ARCHITECTURE Structural OF HdmiOut IS
-    SIGNAL w_Tmds_R_Shift, w_Tmds_G_Shift, w_Tmds_B_Shift : STD_LOGIC := '0';
-    SIGNAL w_Tmds_R ,w_Tmds_G, w_Tmds_B : STD_LOGIC_VECTOR(9 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL w_Tmds_R_Shift : STD_LOGIC := '0';
+    SIGNAL w_Tmds_G_Shift : STD_LOGIC := '0';
+    SIGNAL w_Tmds_B_Shift : STD_LOGIC := '0';
+    
+    SIGNAL w_Tmds_R : STD_LOGIC_VECTOR(9 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL w_Tmds_G : STD_LOGIC_VECTOR(9 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL w_Tmds_B : STD_LOGIC_VECTOR(9 DOWNTO 0) := (OTHERS => '0');
 BEGIN
     -- TMDS Channel Encoders
     e_TMDS_ENCODER_R: ENTITY WORK.TdmsEncoder
@@ -59,21 +64,21 @@ BEGIN
     );
     
     -- Channel Shift Registers
-    e_SHIFT_REGISTER_R: ENTITY WORK.shift_register
+    e_SHIFT_REGISTER_R: ENTITY WORK.ShiftRegister
     GENERIC MAP (g_N => 10)
     PORT MAP (
         i_Data_In => w_Tmds_R,  
         i_Clk => i_Clk,  
         i_Data_Out => w_Tmds_R_Shift   
     );
-    e_SHIFT_REGISTER_G: ENTITY WORK.shift_register
+    e_SHIFT_REGISTER_G: ENTITY WORK.ShiftRegister
     GENERIC MAP (g_N => 10)
     PORT MAP (
         i_Data_In => w_Tmds_G,  
         i_Clk => i_Clk,  
         i_Data_Out => w_Tmds_G_Shift   
     );
-    e_SHIFT_REGISTER_B: ENTITY WORK.shift_register
+    e_SHIFT_REGISTER_B: ENTITY WORK.ShiftRegister
     GENERIC MAP (g_N => 10)
     PORT MAP (
         i_Data_In => w_Tmds_B,  

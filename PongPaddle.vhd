@@ -10,16 +10,12 @@ ENTITY PongPaddle IS
 GENERIC ( g_Player_Paddle_X : INTEGER );
 PORT (
     i_Clk : IN STD_LOGIC;
-    
     i_Col_Count : IN INTEGER RANGE 0 TO c_H_MAX;
     i_Row_Count : IN INTEGER RANGE 0 TO c_V_MAX;
- 
-    -- Player Paddle Control
     i_Paddle_Up : IN STD_LOGIC;
     i_Paddle_Dn : IN STD_LOGIC;
- 
     o_Draw_Paddle : OUT STD_LOGIC;
-    o_Paddle_Y    : OUT STD_LOGIC_VECTOR(5 DOWNTO 0)
+    o_Paddle_Y    : OUT  INTEGER RANGE 0 TO c_V_MAX
 );
 END ENTITY;
  
@@ -27,13 +23,14 @@ ARCHITECTURE RTL OF PongPaddle IS
   SIGNAL w_Paddle_Count_En : STD_LOGIC;
    
   -- Start Location (Top Left) of Paddles
-  SIGNAL r_Paddle_Y : INTEGER RANGE 0 TO c_Game_Height-c_Paddle_Height-1 := c_GAME_HEIGHT/2 - c_PADDLE_HEIGHT/2;
+  SIGNAL r_Paddle_Y : INTEGER RANGE 0 TO c_GAME_HEIGHT - c_PADDLE_HEIGHT - 1 := c_GAME_HEIGHT/2 - c_PADDLE_HEIGHT/2;
  
   SIGNAL r_Draw_Paddle : STD_LOGIC := '0';
    
   SIGNAL r_Paddle_Up, r_Paddle_Dn : STD_LOGIC := '0';
 BEGIN
     e_SAMPLE_PADDLE_UP: ENTITY WORK.SamplingRegister
+    GENERIC MAP ( g_NUM_CYCLES => c_PADDLE_SPEED )
     PORT MAP (
         i_Signal  => i_Paddle_Up,
         i_Clk => i_Clk,
@@ -41,6 +38,7 @@ BEGIN
     );
     
     e_SAMPLE_PADDLE_DN: ENTITY WORK.SamplingRegister
+    GENERIC MAP ( g_NUM_CYCLES => c_PADDLE_SPEED )
     PORT MAP (
         i_Signal  => i_Paddle_Dn,
         i_Clk => i_Clk,
@@ -61,14 +59,14 @@ BEGIN
       IF (i_Paddle_Up = '1' AND w_Paddle_Count_En = '1') THEN
  
         -- If Paddle is already at the top, do not update it
-        IF r_Paddle_Y /= 1 THEN
+        IF (r_Paddle_Y /= 0) THEN
           r_Paddle_Y <= r_Paddle_Y - 1;
         END IF;
  
       ELSIF (i_Paddle_Dn = '1' AND w_Paddle_Count_En = '1') THEN
  
         -- If Paddle is already at the bottom, do not update it
-        IF r_Paddle_Y /= c_Game_Height - c_Paddle_Height - 1 THEN
+        IF (r_Paddle_Y /= c_GAME_HEIGHT - c_PADDLE_HEIGHT - 1) THEN
           r_Paddle_Y <= r_Paddle_Y + 1;
         END IF; 
       END IF;
@@ -82,7 +80,7 @@ BEGIN
       IF (
         i_Col_Count = g_Player_Paddle_X AND
         i_Row_Count >= r_Paddle_Y AND
-        i_Row_Count < r_Paddle_Y + c_Paddle_Height
+        i_Row_Count <= r_Paddle_Y + c_PADDLE_HEIGHT
       ) THEN
         r_Draw_Paddle <= '1';
       ELSE
@@ -92,6 +90,6 @@ BEGIN
   END PROCESS p_DRAW_PADDLE;
  
   o_Draw_Paddle <= r_Draw_Paddle;
-  o_Paddle_Y <= STD_LOGIC_VECTOR(TO_UNSIGNED(r_Paddle_Y, o_Paddle_Y'LENGTH));
+  o_Paddle_Y    <= r_Paddle_Y;
    
 END ARCHITECTURE;

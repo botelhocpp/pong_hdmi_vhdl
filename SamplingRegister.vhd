@@ -3,7 +3,7 @@ USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY SamplingRegister IS
-GENERIC (g_NUM_CYCLES : INTEGER := 1250000);
+GENERIC (g_NUM_CYCLES : INTEGER := 40000000);
 PORT (
     i_Signal : IN STD_LOGIC;
     i_Clk : IN  STD_LOGIC;
@@ -12,7 +12,7 @@ PORT (
 END ENTITY;
 
 ARCHITECTURE RTL OF SamplingRegister IS      
-    CONSTANT c_TOTAL_CYCLES : INTEGER := 25000000;          
+    CONSTANT c_TOTAL_CYCLES : INTEGER := 40000000;          
     SIGNAL r_Output : STD_LOGIC := '0'; 
 BEGIN
     o_Output <= r_Output;
@@ -33,7 +33,7 @@ BEGIN
                 END IF;
             ELSE
                 r_Output <= '0';
-                IF (v_Counter < g_NUM_CYCLES) THEN
+                IF (v_Counter < g_NUM_CYCLES - 1) THEN
                     v_Counter := v_Counter + 1;
                 ELSE
                     v_Enable_Read := '1';

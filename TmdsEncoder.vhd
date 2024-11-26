@@ -26,7 +26,7 @@ BEGIN
     -- Count the ones in the input byte
     p_COUNT_DATA_ONES:
     PROCESS(i_Data)
-        VARIABLE v_Number_Ones : INTEGER RANGE 0 TO 8 := 0;
+        VARIABLE v_Number_Ones : INTEGER RANGE 0 TO i_Data'LENGTH := 0;
     BEGIN
         v_Number_Ones := 0;
         FOR i IN i_Data'RANGE LOOP
@@ -64,22 +64,22 @@ BEGIN
         END IF;
     END PROCESS p_XOR_XNOR_ENCODING;
   
-    -- Count the ones in the intermediary i_Data1
+    -- Count the ones in the intermediary data
     p_COUNT_INTERMEDIARY_DATA_ONES:
     PROCESS(w_Intermediary_Data)
-        VARIABLE v_Number_Ones : INTEGER RANGE 0 TO 8 := 0;
+        VARIABLE v_Number_Ones : INTEGER RANGE 0 TO i_Data'LENGTH := 0;
     BEGIN
         v_Number_Ones := 0;
-        FOR i IN 0 TO 7 LOOP
+        FOR i IN i_Data'RANGE LOOP
             IF(w_Intermediary_Data(i) = '1') THEN
                 v_Number_Ones := v_Number_Ones + 1;
             END IF;
         END LOOP;
         w_Number_Ones_Intermediary_Data <= v_Number_Ones;
-        w_Diff_Ones_Zeros <= v_Number_Ones + v_Number_Ones - 8;
+        w_Diff_Ones_Zeros <= v_Number_Ones + v_Number_Ones - i_Data'LENGTH;
     END PROCESS p_COUNT_INTERMEDIARY_DATA_ONES;
   
-    -- Determine output and new v_Disparity1
+    -- Determine output and new disparity
     p_DETERMINE_DISPARITY:
     PROCESS(i_Clk)
 	   VARIABLE v_Disparity : INTEGER RANGE -16 TO 15 := 0;
